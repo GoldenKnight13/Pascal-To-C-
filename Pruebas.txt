@@ -1,0 +1,25 @@
+program ejer35;
+ uses crt;
+ var num:integer;
+begin
+ clrscr;
+ write ('escriba un numero entero:'); readln (num);
+ writeln ('');
+ if num < 100 then
+ write ('el numero que ha escrito es menor de 100')
+ else if num > 100 then
+ write ('el numero que ha escrito es mayor de 100')
+ else
+ write ('el numero es 100')
+end.
+program ejer35;
+ uses crt;
+ var num:real;
+begin
+ clrscr;
+ write('introduzca un numero : '); readln(num);
+ if (num <= 100) then
+ write('numero menor o igual a 100 ')
+ else
+ write('numero mayor de 100')
+end. 
