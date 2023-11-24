@@ -1,26 +1,37 @@
 %{
 
 #include <stdio.h>
-#pragma warning(disable: 4013 4244 4267)
+#include<stdlib.h>
+#pragma warning(disable: 4996 4013 4244 4267)
 
 %}
 
+%union{
+	char* str;
+	int num;
+}
+
 
 /*Tokens*/
-%token PROGRAM FUNCTION PROCEDURE BEGIN END
+%token PROGRAM FUNCTION PROCEDURE BEGIN_TOKEN END
 %token VAR CONST INTEGER REAL CHAR STRING BOOLEAN ARRAY OF
 %token AND OR NOT
-%token PLUS MINUS MULTIPLICATION DIVISION DIV MOD EXP
+%token PLUS MINUS MULTIPLICATION DIVISION DIV MOD
+%token <str> EXP
 %token WHILE DO FOR TO DOWNTO
 %token READ WRITE READLN WRITELN
 %token IF THEN ELSE
-%token ASSIGN L_PARENT R_PARENT L_S_BRACKET R_S_BRACKET SEMICOLON DOT COMMA COLON EQUAL MONEY_SIGN AMPERSAND PERCENTAGE L_BRACKET R_BRACKET LESS GREATER GATITO QUOTATION_MARK NOT_EQUAL DOUBLE_DOT
-%token LETRA DIGITO_NO_CERO CERO
+%token ASSIGN L_PARENT R_PARENT L_S_BRACKET R_S_BRACKET SEMICOLON DOT COMMA COLON EQUAL MONEY_SIGN AMPERSAND 
+%token PERCENTAGE L_BRACKET R_BRACKET LESS GREATER GATITO QUOTATION_MARK NOT_EQUAL DOUBLE_DOT
+%token OPEN_COMMENT CLOSE_COMMENT
+%token <str> LETRA 
+%token <num> DIGITO_NO_CERO 
+%token <num> CERO
 
 
 %%
 
-programa:	PROGRAM identificador L_PARENT identificador_lista R_PARENT SEMICOLON declaraciones subprograma_declaraciones instruccion_compuesta DOT;
+programa:	comentario PROGRAM identificador L_PARENT identificador_lista R_PARENT cambio_linea declaraciones subprograma_declaraciones instruccion_compuesta DOT;
 
 identificador:	letra
 		| letra identificador_siguiente
@@ -61,13 +72,13 @@ declaraciones:	declaraciones_variables
 		| declaraciones_constantes
 		;
 		
-declaraciones_variables:	declaraciones_variables VAR identificador_lista COLON tipo SEMICOLON
+declaraciones_variables:	declaraciones_variables VAR identificador_lista COLON tipo cambio_linea
 				| /*vacio*/
 				;
 				
-declaraciones_constantes:	declaraciones_constantes CONST identificador EQUAL constante_entera SEMICOLON
-				| declaraciones_constantes CONST identificador EQUAL constante_real SEMICOLON
-				| declaraciones_constantes CONST identificador EQUAL constante_cadena SEMICOLON
+declaraciones_constantes:	declaraciones_constantes CONST identificador EQUAL constante_entera cambio_linea
+				| declaraciones_constantes CONST identificador EQUAL constante_real cambio_linea
+				| declaraciones_constantes CONST identificador EQUAL constante_cadena cambio_linea
 				| /*vacio*/
 				;
 				
@@ -82,15 +93,15 @@ estandar_tipo:	INTEGER
 		| BOOLEAN
 		;
 		
-subprograma_declaraciones:	subprograma_declaraciones subprograma_declaracion SEMICOLON
+subprograma_declaraciones:	subprograma_declaraciones subprograma_declaracion cambio_linea
 				| /*vacio*/
 				;
 				
 subprograma_declaracion:	subprograma_encabezado declaraciones subprograma_declaraciones instruccion_compuesta
 				;
 				
-subprograma_encabezado:	FUNCTION identificador argumentos COLON estandar_tipo SEMICOLON
-			| PROCEDURE identificador argumentos SEMICOLON
+subprograma_encabezado:	FUNCTION identificador argumentos COLON estandar_tipo cambio_linea
+			| PROCEDURE identificador argumentos cambio_linea
 			;
 argumentos:	L_PARENT parametros_lista R_PARENT
 		| /*vacio*/
@@ -100,7 +111,7 @@ parametros_lista:	identificador_lista COLON tipo
 			| parametros_lista SEMICOLON identificador_lista COLON tipo
 			;
 			
-instruccion_compuesta:	BEGIN instrucciones_opcionales END
+instruccion_compuesta:	BEGIN_TOKEN instrucciones_opcionales END
 			;
 			
 instrucciones_opcionales:	instrucciones_lista
@@ -108,7 +119,7 @@ instrucciones_opcionales:	instrucciones_lista
 				;
 				
 instrucciones_lista:	instrucciones
-			| instrucciones_lista SEMICOLON instrucciones
+			| instrucciones_lista cambio_linea instrucciones
 			;
 			
 instrucciones:	variable_asignacion
@@ -135,6 +146,8 @@ escritura_instruccion: WRITE L_PARENT constante_cadena COMMA identificador R_PAR
 			| WRITELN L_PARENT constante_cadena R_PARENT
 			| WRITE L_PARENT constante_cadena COMMA expresion R_PARENT
 			| WRITELN L_PARENT constante_cadena COMMA expresion R_PARENT
+			| WRITE L_PARENT identificador R_PARENT
+			| WRITELN L_PARENT identificador  R_PARENT
 			;
 			
 constante_cadena:	QUOTATION_MARK cadena QUOTATION_MARK
@@ -159,7 +172,7 @@ caracter_alfanumerico:	letra
 			| R_BRACKET
 			| GREATER
 			| LESS
-			| SEMICOLON
+			| cambio_linea
 			| L_S_BRACKET 
 			| R_S_BRACKET
 			| COMMA
@@ -203,6 +216,7 @@ relop_paren:	L_PARENT relop_expresion R_PARENT
 		;
 		
 relop_expresion_simple:	expresion relop expresion
+			| comparacion
 			;
 			
 expresion_lista:	expresion
@@ -249,8 +263,65 @@ constante_real:	signo numero_entero DOT numero_entero
 		;
 		
 exponente:	EXP signo numero_entero
-		|
 		;
+		
+comentario:	OPEN_COMMENT contenido CLOSE_COMMENT
+		| /* vacio */
+		;
+
+contenido:	tokens_disponibles contenido
+		| tokens_disponibles
+		| /*vacio*/
+		;
+
+cambio_linea:	SEMICOLON comentario
+		;
+		
+tokens_disponibles:	caracter_alfanumerico
+			| PROGRAM
+			| FUNCTION
+			| PROCEDURE
+			| BEGIN_TOKEN
+			| END
+			| VAR
+			| CONST
+			| INTEGER
+			| REAL
+			| CHAR
+			| STRING
+			| BOOLEAN
+			| ARRAY
+			| OF
+			| AND
+			| OR
+			| NOT
+			| DIV
+			| MOD
+			| WHILE
+			| DO
+			| FOR
+			| TO
+			| DOWNTO
+			| READ
+			| WRITE
+			| READLN
+			| WRITELN
+			| IF
+			| THEN
+			| ELSE
+			;
+			
+comparacion:	identificador EQUAL expresion_comparador
+		| identificador GREATER expresion_comparador
+		| identificador LESS expresion_comparador
+		| identificador NOT_EQUAL expresion_comparador
+		| identificador GREATER EQUAL expresion_comparador
+		| identificador LESS EQUAL expresion_comparador
+		;
+		
+expresion_comparador:	identificador
+			| signo digito
+			;
 
 %%
 
@@ -263,19 +334,18 @@ int yyerror(char *s) {
    
 }
 
+extern FILE* yyin;
+
 int main(int argc, char * argv[]) {
 
-	FILE* file = fopen("Prueba.txt", "r");
-	if(file == NULL){
-		return 1;
-	}
-	
-	yyin = file;
-	yylex();
-	return 0;
-
-   yyparse();
-   printf("Linea reconocida correctamente\n");
-   return 0;
+    FILE* file = fopen("C:/Users/sonic/Documents/UP/Semestre 7/Lenguajes/Proyecto Final/Pruebas.txt","r");
+    if (!file){
+    	yyerror("Archivo no encontrado");
+    }
+    
+    yyin = file;
+    yyparse();
+    printf("Programa reconocido correctamente\n");
+    return 0;
    
 }

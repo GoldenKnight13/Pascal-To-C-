@@ -42,7 +42,7 @@
      PROGRAM = 258,
      FUNCTION = 259,
      PROCEDURE = 260,
-     BEGIN = 261,
+     BEGIN_TOKEN = 261,
      END = 262,
      VAR = 263,
      CONST = 264,
@@ -96,16 +96,27 @@
      QUOTATION_MARK = 312,
      NOT_EQUAL = 313,
      DOUBLE_DOT = 314,
-     LETRA = 315,
-     DIGITO_NO_CERO = 316,
-     CERO = 317
+     OPEN_COMMENT = 315,
+     CLOSE_COMMENT = 316,
+     LETRA = 317,
+     DIGITO_NO_CERO = 318,
+     CERO = 319
    };
 #endif
 
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef int YYSTYPE;
+typedef union YYSTYPE
+{
+
+
+	char* str;
+	int num;
+
+
+
+} YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

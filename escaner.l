@@ -19,10 +19,16 @@ EXPONENCIAL	e|E
 QUOTATION_MARK	\"
 
 /*Falta complementarlo bien*/
-COMMENT 	\'		
+OPEN_COMMENT "(*"
+CLOSE_COMMENT "*)"
+
+IGNORES [\t\n]+
 
 
 %%
+
+{IGNORES}	{ /* Ignores */ }
+" "		{ /* Ignores */ }
 
 "program"	{
 			return PROGRAM;
@@ -37,7 +43,7 @@ COMMENT 	\'
 		}
 		
 "begin"	{
-			return BEGIN;
+			return BEGIN_TOKEN;
 		}
 	
 "end"	{
@@ -123,6 +129,7 @@ COMMENT 	\'
 	}
 	
 {EXPONENCIAL}	{
+			yylval.str = *yytext;
 			return EXP;
 		}
 	
@@ -181,7 +188,16 @@ COMMENT 	\'
 	}
 
 	
-	
+
+{OPEN_COMMENT}	{	
+			return OPEN_COMMENT;
+		}
+		
+{CLOSE_COMMENT}	{
+			return CLOSE_COMMENT;
+		}
+
+
 ":="	{
 		return ASSIGN;
 	}
@@ -269,21 +285,21 @@ COMMENT 	\'
 	
 	
 {LETRA}	{
-		yyval = yytext;
+		yylval.str = *yytext;
 		return LETRA;
 	}
 	
 {DIGITO_NO_CERO}	{
-				yyval = atoi(yytext);
+				yylval.num = atoi(yytext);
 				return DIGITO_NO_CERO;
 			}
 		
 "0"	{
-		yyval = atoi(yytext);
+		yylval.num = atoi(yytext);
 		return CERO;
 	}
 	
-
+	
 
 .	{ yyerror("Caracter invalido"); }
 
@@ -293,3 +309,5 @@ COMMENT 	\'
 int yywrap(void){
 	return 1;
 }
+
+

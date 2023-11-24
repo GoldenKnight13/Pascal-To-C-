@@ -19,10 +19,17 @@ EXPONENCIAL	e|E
 QUOTATION_MARK	\"
 
 /*Falta complementarlo bien*/
-COMMENT 		\'		
-
+WORDS [{LETRA}|{EXPONENCIAL}|{DIGITO_NO_CERO}|0|\s|\t|\n]*
+OPEN_COMMENT	"(*"
+CLOSE_COMMENT	"*)"
+COMMENT	{OPEN_COMMENT}{WORDS}{CLOSE_COMMENT}
 
 %%
+
+{COMMENT}	{
+			printf("Comment\n");
+		}
+
 
 "program"	{
 			printf("Program\n");
@@ -291,7 +298,7 @@ COMMENT 		\'
 
 int main(int argc, char* argv[]){
 
-	FILE* file = fopen("Prueba.txt", "r");
+	FILE* file = fopen("C:/Users/sonic/Documents/UP/Semestre 7/Lenguajes/Proyecto Final/Pruebas.txt", "r");
 	if(file == NULL){
 		return 1;
 	}
