@@ -2,7 +2,22 @@
 
 #include <stdio.h>
 #include<stdlib.h>
+#include <malloc.h>
 #pragma warning(disable: 4996 4013 4244 4267)
+
+#include"unistd.h"
+#include"getopt.h"
+
+extern FILE* yyin;
+extern int yylex();
+
+
+void yyerror(char* code) {
+   printf("Error %s\n", code);
+   exit(1); /* Sale del programa */
+}
+
+int line = 1;
 
 %}
 
@@ -14,7 +29,7 @@
 
 /*Tokens*/
 %token PROGRAM FUNCTION PROCEDURE BEGIN_TOKEN END
-%token VAR CONST INTEGER REAL CHAR STRING BOOLEAN ARRAY OF
+%token VAR TOKEN_CONST TOKEN_INTEGER REAL TOKEN_CHAR TOKEN_STRING TOKEN_BOOLEAN ARRAY OF
 %token AND OR NOT
 %token PLUS MINUS MULTIPLICATION DIVISION DIV MOD
 %token <str> EXP
@@ -28,26 +43,65 @@
 %token <num> DIGITO_NO_CERO 
 %token <num> CERO
 
+/* Valores no terminales */
+%type <str> letra
+%type <num> digito
+%type <str> identificador_siguiente
+%type <str> identificador
+%type <str> identificador_lista
+
+%type <str> tipo
+%type <str> estandar_tipo
+
 
 %%
 
 programa:	comentario PROGRAM identificador L_PARENT identificador_lista R_PARENT cambio_linea declaraciones subprograma_declaraciones instruccion_compuesta DOT;
 
-identificador:	letra
-		| letra identificador_siguiente
+identificador:	letra { $$ = $1; }
+		| letra identificador_siguiente  {
+			char* combine = (char*)malloc( (strlen($1) + strlen($2) + 1) * sizeof(char) );
+			strcpy(combine, $1);
+			strcat(combine, $2);
+			$$ = combine;
+		}
 		;
 		
-identificador_siguiente:	letra identificador_siguiente
-				| digito identificador_siguiente
-				|/*vacio*/
+identificador_siguiente:	letra identificador_siguiente {
+					char* combine = (char*)malloc( (strlen($1) + strlen($2) + 1) * sizeof(char) );
+					strcpy(combine, $1);
+					strcat(combine, $2);
+					$$ = combine;
+				}
+				| digito identificador_siguiente { 
+					char aux [2];
+					sprintf(aux, "%d", $1);
+					char* combine = (char*)malloc( ( strlen(aux) + strlen($2) + 1) * sizeof(char) );
+					strcpy(combine, aux);
+					strcat(combine, $2);
+					$$ = combine; 
+				}
+				| /* vacio */ { 
+					char* combine = (char*)malloc( (strlen("") + 1) * sizeof(char) );
+					strcpy(combine, "");
+					$$ = combine;
+				}
 				;
-				
-letra:	LETRA
-	| EXP
+						
+letra:	LETRA	{ 
+		char* combine = (char*)malloc( (strlen($1) + 1) * sizeof(char) );
+		strcpy(combine, $1);
+		$$ = combine;
+	}
+	| EXP 	{
+		char* combine = (char*)malloc( (strlen($1) + 1) * sizeof(char) );
+		strcpy(combine, $1);
+		$$ = combine;
+	}
 	;
 				
-digito:	DIGITO_NO_CERO
-	| CERO
+digito:	DIGITO_NO_CERO	{ $$ = $1; }
+	| CERO	{ $$ = $1; }
 	;
 	
 relop:	AND
@@ -64,33 +118,47 @@ mulop:	MULTIPLICATION
 	| MOD
 	;
 	
-identificador_lista:	identificador
-			| identificador_lista COMMA identificador
+identificador_lista:	identificador {$$ = $1;}
+			| identificador_lista COMMA identificador {
+				char* combine = (char*)malloc( (strlen($1) + strlen(",") + strlen($3) + 1) * sizeof(char) );
+				strcpy(combine, $1);
+				strcat(combine, ",");
+				strcat(combine, $3);
+				$$ = combine;
+			}
 			;
 			
 declaraciones:	declaraciones_variables
 		| declaraciones_constantes
 		;
 		
-declaraciones_variables:	declaraciones_variables VAR identificador_lista COLON tipo cambio_linea
+declaraciones_variables:	declaraciones_variables VAR identificador_lista COLON tipo {
+					printf("Identificador: %s\nTipo: %s\nConcepto: %s\nLinea: %d\n", $3, $5, "VAR", line);
+				} cambio_linea
 				| /*vacio*/
 				;
 				
-declaraciones_constantes:	declaraciones_constantes CONST identificador EQUAL constante_entera cambio_linea
-				| declaraciones_constantes CONST identificador EQUAL constante_real cambio_linea
-				| declaraciones_constantes CONST identificador EQUAL constante_cadena cambio_linea
+declaraciones_constantes:	declaraciones_constantes TOKEN_CONST identificador EQUAL constante_entera {
+					printf("Identificador: %s\nTipo: %s\nConcepto: %s\nLinea: %d\n", $3, "INTEGER", "CONST", line);
+				} cambio_linea
+				| declaraciones_constantes TOKEN_CONST identificador EQUAL constante_real {
+					printf("Identificador: %s\nTipo: %s\nConcepto: %s\nLinea: %d\n", $3, "REAL", "CONST", line);
+				} cambio_linea
+				| declaraciones_constantes TOKEN_CONST identificador EQUAL constante_cadena {
+					printf("Identificador: %s\nTipo: %s\nConcepto: %s\nLinea: %d\n", $3, "STRING", "CONST", line);
+				} cambio_linea
 				| /*vacio*/
 				;
 				
-tipo:	estandar_tipo
-	| ARRAY L_S_BRACKET numero_entero DOUBLE_DOT numero_entero R_S_BRACKET OF estandar_tipo
+tipo:	estandar_tipo	{ $$ = $1 }
+	| ARRAY L_S_BRACKET numero_entero DOUBLE_DOT numero_entero R_S_BRACKET OF estandar_tipo	{ $$ = "ARRAY"; }
 	;	
 
-estandar_tipo:	INTEGER
-		| REAL
-		| CHAR
-		| STRING
-		| BOOLEAN
+estandar_tipo:	TOKEN_INTEGER	{ $$ = "INTEGER"; }
+		| REAL	{ $$ = "REAL"; }
+		| TOKEN_CHAR	{ $$ = "CHAR"; }
+		| TOKEN_STRING	{ $$ = "STRING"; }
+		| TOKEN_BOOLEAN	{ $$ = "BOOLEAN"; }
 		;
 		
 subprograma_declaraciones:	subprograma_declaraciones subprograma_declaracion cambio_linea
@@ -100,9 +168,14 @@ subprograma_declaraciones:	subprograma_declaraciones subprograma_declaracion cam
 subprograma_declaracion:	subprograma_encabezado declaraciones subprograma_declaraciones instruccion_compuesta
 				;
 				
-subprograma_encabezado:	FUNCTION identificador argumentos COLON estandar_tipo cambio_linea
-			| PROCEDURE identificador argumentos cambio_linea
+subprograma_encabezado:	FUNCTION identificador argumentos COLON estandar_tipo {
+					printf("Identificador: %s\nTipo: %s\nConcepto: %s\nLinea: %d\n", $2, $5, "FUNCTION", line);
+				} cambio_linea
+			| PROCEDURE identificador argumentos {
+					printf("Identificador: %s\nTipo: %s\nConcepto: %s\nLinea: %d\n", $2, "", "PROCEDURE", line);
+				} cambio_linea
 			;
+			
 argumentos:	L_PARENT parametros_lista R_PARENT
 		| /*vacio*/
 		;
@@ -284,12 +357,12 @@ tokens_disponibles:	caracter_alfanumerico
 			| BEGIN_TOKEN
 			| END
 			| VAR
-			| CONST
-			| INTEGER
+			| TOKEN_CONST
+			| TOKEN_INTEGER
 			| REAL
-			| CHAR
-			| STRING
-			| BOOLEAN
+			| TOKEN_CHAR
+			| TOKEN_STRING
+			| TOKEN_BOOLEAN
 			| ARRAY
 			| OF
 			| AND
@@ -325,18 +398,8 @@ expresion_comparador:	identificador
 
 %%
 
-
-int yyerror(char *s) {
-
-   printf("Error %s\n", s);
-   exit(1); /* Sale del programa */
-   return 0;
-   
-}
-
 extern FILE* yyin;
-
-int main(int argc, char * argv[]) {
+int main(int argc, char* argv[]) {
 
     FILE* file = fopen("C:/Users/sonic/Documents/UP/Semestre 7/Lenguajes/Proyecto Final/Pruebas.txt","r");
     if (!file){
@@ -346,6 +409,6 @@ int main(int argc, char * argv[]) {
     yyin = file;
     yyparse();
     printf("Programa reconocido correctamente\n");
+    printf("Lineas: %d\n", line);
     return 0;
-   
 }

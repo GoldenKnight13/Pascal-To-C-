@@ -8,6 +8,10 @@
 
 #include "parser.tab.h"
 
+extern int line;
+extern void yyerror(char* code);
+extern void yyerror(const char* error);
+
 %}
 
 /*Primitivas*/
@@ -22,13 +26,16 @@ QUOTATION_MARK	\"
 OPEN_COMMENT "(*"
 CLOSE_COMMENT "*)"
 
-IGNORES [\t\n]+
+IGNORES [\t]+
 
 
 %%
 
 {IGNORES}	{ /* Ignores */ }
 " "		{ /* Ignores */ }
+"\n"		{line++;}
+
+
 
 "program"	{
 			return PROGRAM;
@@ -57,11 +64,11 @@ IGNORES [\t\n]+
 	}
 	
 "const"	{
-		return CONST;
+		return TOKEN_CONST;
 	}
 
 "integer"	{
-			return INTEGER;
+			return TOKEN_INTEGER;
 		}
 		
 "real"	{
@@ -69,15 +76,15 @@ IGNORES [\t\n]+
 	}
 	
 "char"	{
-		return CHAR;
+		return TOKEN_CHAR;
 	}
 	
 "string"	{
-			return STRING;
+			return TOKEN_STRING;
 		}
 		
 "boolean"	{
-			return BOOLEAN;
+			return TOKEN_BOOLEAN;
 		}
 		
 "array"	{
@@ -129,7 +136,7 @@ IGNORES [\t\n]+
 	}
 	
 {EXPONENCIAL}	{
-			yylval.str = *yytext;
+			yylval.str = yytext;
 			return EXP;
 		}
 	
@@ -285,7 +292,7 @@ IGNORES [\t\n]+
 	
 	
 {LETRA}	{
-		yylval.str = *yytext;
+		yylval.str = yytext;
 		return LETRA;
 	}
 	
@@ -309,5 +316,6 @@ IGNORES [\t\n]+
 int yywrap(void){
 	return 1;
 }
+
 
 
